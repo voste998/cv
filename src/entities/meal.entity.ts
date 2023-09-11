@@ -8,7 +8,7 @@ import {
 } from "typeorm";
 import { MealCart } from "./meal.cart.entity";
 import { MealComponent } from "./meal.component.entity";
-import { Photo } from "./Photo";
+import { Photo } from "./photo.entity";
 
 @Index("uq_meal_name_day", ["name", "day"], { unique: true })
 @Entity("meal", { schema: "altera_ketering" })

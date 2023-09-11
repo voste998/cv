@@ -6,7 +6,7 @@ import {
   ManyToOne,
   PrimaryGeneratedColumn,
 } from "typeorm";
-import { Administrator } from "./Administrator";
+import { Administrator } from "./administrator.entity";
 
 @Index("fk_administrator_token_administrator_id", ["administratorId"], {})
 @Entity("administrator_token", { schema: "altera_ketering" })
@@ -18,22 +18,23 @@ export class AdministratorToken {
   })
   administratorTokenId: number;
 
-  @Column("int", { name: "administrator_id", unsigned: true })
+  @Column({type:"int",  name: "administrator_id", unsigned: true })
   administratorId: number;
 
-  @Column("text", { name: "token" })
+  @Column({type:"text",  name: "token" })
   token: string;
 
-  @Column("timestamp", {
+  @Column({
+    type:"timestamp", 
     name: "created_at",
     default: () => "CURRENT_TIMESTAMP",
   })
   createdAt: Date;
 
-  @Column("datetime", { name: "expires_at" })
+  @Column({type:"datetime",  name: "expires_at" })
   expiresAt: Date;
 
-  @Column("bit", { name: "is_valid", default: () => "'b'0''" })
+  @Column({type:"bit",  name: "is_valid", default: () => "'b'0''" })
   isValid: boolean;
 
   @ManyToOne(

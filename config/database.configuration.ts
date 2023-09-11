@@ -1,6 +1,6 @@
 export const DatabaseConfiguration={
     host:"localhost",
-    username:"aplikacija",
-    password:"aplikacija",
+    username:"ketering",
+    password:"ketering",
     database:"altera_ketering"
 }
