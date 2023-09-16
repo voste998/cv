@@ -22,6 +22,12 @@ export class CompanyController{
     editFull(@Param("id") id:number,@Body() data:EditCompanyDto){
         return this.companyService.editCompany(id,data);
     }
+    @Get("test")
+    test(){
+        return {
+            test:"Poroslo na middleware"
+        }
+    }
     
     
     

@@ -45,4 +45,13 @@ export class WorkmanService{
             }
         })
     }
+
+    async getValidById(id:number):Promise<Workman>{
+        return await this.workman.findOne({
+            where:{
+                workmanId:id,
+                
+            }
+        });
+    }
 }

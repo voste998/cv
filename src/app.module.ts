@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { MiddlewareConsumer, Module, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfiguration } from '../config/database.configuration';
 import { Administrator } from './entities/administrator.entity';
@@ -21,6 +21,12 @@ import { WorkmanService } from './services/workman/workman.service';
 import { WorkmanMailer } from './services/workman/workman.mailer.service';
 import { AuthController } from './controllers/auth.controller';
 import { CompanyMailer } from './services/company/company.mailer.service';
+import { AuthMiddleware } from './middlewares/auth.middleware';
+import { AdministratorService } from './services/administrator/administrator.service';
+import { CartControler } from './controllers/cart.controller';
+import { CartService } from './services/cart/cart.service';
+import { MealService } from './services/meal/meal.service';
+import { MealCartWorkman } from './entities/meal.cart.workman.entity';
 
 @Module({
   imports: [
@@ -35,13 +41,13 @@ import { CompanyMailer } from './services/company/company.mailer.service';
         Administrator,AdministratorToken,Cart,
         CompanyDay,Company,CompanyToken,
         Component,MealCart,MealComponent,
-        Meal,Photo,Workman
+        Meal,Photo,Workman,MealCartWorkman
       ]
     }),TypeOrmModule.forFeature([
       Administrator,AdministratorToken,Cart,
       CompanyDay,Company,CompanyToken,
       Component,MealCart,MealComponent,
-      Meal,Photo,Workman
+      Meal,Photo,Workman,MealCartWorkman
     ]),
     MailerModule.forRoot({
       transport: "smtps://"+MailConfig.username+":"
@@ -52,7 +58,14 @@ import { CompanyMailer } from './services/company/company.mailer.service';
       }
     })
   ],
-  controllers: [CompanyController,AuthController],
-  providers: [CompanyService,WorkmanService,WorkmanMailer,CompanyMailer],
-})
-export class AppModule {}
+  controllers: [CompanyController,AuthController,CartControler],
+  providers: [CompanyService,WorkmanService,WorkmanMailer,CompanyMailer,AdministratorService,CartService,MealService],
+  exports:[AdministratorService,WorkmanService]
+}) 
+export class AppModule implements NestModule {
+    configure(consumer: MiddlewareConsumer) {
+        consumer.apply(AuthMiddleware).
+        exclude().
+        forRoutes("api/company/test","api/cart/*")
+    }
+}

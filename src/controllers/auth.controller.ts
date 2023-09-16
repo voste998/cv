@@ -1,11 +1,11 @@
-import { Body, Controller,Get,Param,Post,Req } from "@nestjs/common";
+import { Body, Controller,Get,Param,Post,Req,HttpException,HttpStatus } from "@nestjs/common";
 import { LoginWorkmanDto } from "../dtos/workman/login.workman.dto";
 import { WorkmanService } from "../services/workman/workman.service";
 import ApiResponse from "../misc/api.response.class";
 import { CompanyService } from "../services/company/company.service";
 import { JwtRefreshDataDto } from "../dtos/auth/jwt.refresh.data.dto";
 import { Request } from "express";
-import { jwtRefreshSecret, jwtTokenValidationSecret, jwtValidationSecret } from "../../config/jwt.secret";
+import { jwtRefreshSecret, jwtSecret, jwtTokenValidationSecret, jwtValidationSecret } from "../../config/jwt.secret";
 import * as jwt from "jsonwebtoken";
 import { LoginWorkmanInfoDto } from "../dtos/workman/login.workman.info.dto";
 import { JwtDataCompanyTokenValidation } from "../dtos/company/jwt.data.company.token.validation";
@@ -15,6 +15,8 @@ import { JwtDataWorkmanValidationDto } from "../dtos/workman/jwt.data.workman.va
 import { AddWorkmanDto } from "../dtos/workman/add.workman.dto";
 import { WorkmanMailer } from "../services/workman/workman.mailer.service";
 import { CompanyRefreshTokenDto } from "../dtos/company/company.refresh.token.dto";
+import { JwtDataDto } from "../dtos/auth/jwt.data.dto";
+import { RefreshInfoDto } from "../dtos/auth/refresh.info.dto";
 
 
 @Controller("auth") 
@@ -149,9 +151,66 @@ export class AuthController{
         return await this.workmanService.validateWorkman(jwtData.workmanId)
     }
 
-    @Post("company/refresh")
-    refreshCompanyToken(data:CompanyRefreshTokenDto){
 
+    @Post("company/refresh")
+    async refreshCompanyToken(@Body() data:CompanyRefreshTokenDto,@Req() req:Request){
+        const token=await this.companyService.getCompanyToken(data.refreshToken);
+
+        if(!token)
+            return new ApiResponse("error",3010,"Token ne postoji!");
+
+        if(token.isValid[0]===0)
+            return new ApiResponse("error",3011,"Token nije validan!");
+
+        const workman=await this.workmanService.getValidById(token.workmanId);
+
+        if(!workman)
+            return new ApiResponse("error",3012,"Nepostojeci radnik!");
+        
+        const expTime=token.expiresAt.getTime();
+        const currentTime=new Date().getTime();
+
+        if(expTime < currentTime)
+            return new ApiResponse("error",-3013,"Isteklo vazenje tokena!");
+
+        let jwtRefreshData:JwtRefreshDataDto;
+
+        try{
+            jwtRefreshData=jwt.verify(data.refreshToken,jwtRefreshSecret);
+        }catch(e){
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+        }
+
+        if(!jwtRefreshData)
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+        
+        if(jwtRefreshData.ip!==req.ip.toString())
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+
+        if(jwtRefreshData.ua!==req.headers["user-agent"])
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+
+        const jwtData:JwtDataDto=new JwtDataDto();
+        jwtData.role="workman";
+        jwtData.id=jwtRefreshData.id;
+        jwtData.identity=jwtRefreshData.identity;
+        jwtData.companyId=jwtRefreshData.companyId;
+        jwtData.ip=jwtRefreshData.ip;
+        jwtData.ua=jwtRefreshData.ua;
+
+        const expAt=new Date();
+        expAt.setMinutes(expAt.getMinutes()+5);
+
+        jwtData.exp=expAt.getTime()/1000;
+
+        const newToken=jwt.sign(jwtData.toPlain(),jwtSecret);
+
+        const refreshInfo:RefreshInfoDto={
+            token:newToken,
+            refreshToken:data.refreshToken
+        };
+
+        return refreshInfo;
     }
 
 }
