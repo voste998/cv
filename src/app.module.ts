@@ -27,6 +27,7 @@ import { CartControler } from './controllers/cart.controller';
 import { CartService } from './services/cart/cart.service';
 import { MealService } from './services/meal/meal.service';
 import { MealCartWorkman } from './entities/meal.cart.workman.entity';
+import { MealController } from './controllers/meal.controller';
 
 @Module({
   imports: [
@@ -58,7 +59,7 @@ import { MealCartWorkman } from './entities/meal.cart.workman.entity';
       }
     })
   ],
-  controllers: [CompanyController,AuthController,CartControler],
+  controllers: [CompanyController,AuthController,CartControler,MealController],
   providers: [CompanyService,WorkmanService,WorkmanMailer,CompanyMailer,AdministratorService,CartService,MealService],
   exports:[AdministratorService,WorkmanService]
 }) 
@@ -66,6 +67,6 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer.apply(AuthMiddleware).
         exclude().
-        forRoutes("api/company/test","api/cart/*")
+        forRoutes("api/company/test","api/cart/*","api/meal/*")
     }
 }

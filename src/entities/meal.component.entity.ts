@@ -29,7 +29,7 @@ export class MealComponent {
   componentId: number;
 
   @Column({type:"decimal",  name: "quantity", precision: 4, scale: 1 })
-  quantity: string;
+  quantity: number;
 
   @ManyToOne(() => Component, (component) => component.mealComponents, {
     onDelete: "RESTRICT",
