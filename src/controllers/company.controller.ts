@@ -1,33 +1,32 @@
-import { Body, Controller, Param, Post , Get } from "@nestjs/common";
+import { Body, Controller, Param, Post , Get, UseGuards } from "@nestjs/common";
 import { AddCompanyDto } from "../dtos/company/add.company.dto";
 import EditCompanyDto from "../dtos/company/edit.company.dto";
 import { CompanyService } from "../services/company/company.service";
+import { Roles } from "../misc/roles.descriptor";
+import { RoleCheckedGuard } from "../misc/role.checked.guard";
 
-import { WorkmanService } from "../services/workman/workman.service";
-import { WorkmanMailer } from "../services/workman/workman.mailer.service";
 
 @Controller("api/company")
 export class CompanyController{
     constructor(
         private readonly companyService:CompanyService,
-        private readonly workmanService:WorkmanService,
-        private readonly workmanMailer:WorkmanMailer
+        
     ){}
-
+    
+    @UseGuards(RoleCheckedGuard)
+    @Roles("administrator")
     @Post("createNew")
     createNew(@Body() data:AddCompanyDto){
         return this.companyService.createNewCompany(data);
     }
+
+    @UseGuards(RoleCheckedGuard)
+    @Roles("administrator")
     @Post("editFull/:id")
     editFull(@Param("id") id:number,@Body() data:EditCompanyDto){
         return this.companyService.editCompany(id,data);
     }
-    @Get("test")
-    test(){
-        return {
-            test:"Poroslo na middleware"
-        }
-    }
+   
     
     
     

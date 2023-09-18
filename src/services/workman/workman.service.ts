@@ -50,7 +50,7 @@ export class WorkmanService{
         return await this.workman.findOne({
             where:{
                 workmanId:id,
-                
+                isValid:true
             }
         });
     }

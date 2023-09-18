@@ -33,23 +33,22 @@ export class AuthMiddleware implements NestMiddleware{
         
         if(!jwtData)
             throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
-
-        switch(jwtData.role){
-            case "administrator":
-                let admin=await this.administratorService.getById(jwtData.id);
-                if(!admin)
-                    throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
-                ;
-            case "workman":
-                let workman=await this.workmanService.getValidById(jwtData.id);
-                if(!workman)
-                    throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
-                ;
+           
+        
+        if(jwtData.role==="administrator"){
+            let admin=await this.administratorService.getById(jwtData.id);
+            if(!admin)
+                throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
         }
-
+        else if(jwtData.role==="workman"){
+            let workman=await this.workmanService.getValidById(jwtData.id);
+            if(!workman)
+                throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
+        }
+        
         if(jwtData.ip!==req.ip.toString())
             throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
-
+                          
         if(jwtData.ua!==req.headers["user-agent"])
             throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
 

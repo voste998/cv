@@ -1,5 +1,5 @@
 import { Body, Controller,Get,Param,Post,Req,HttpException,HttpStatus } from "@nestjs/common";
-import { LoginWorkmanDto } from "../dtos/workman/login.workman.dto";
+import { LoginWorkmanDto } from "../dtos/auth/login.workman.dto";
 import { WorkmanService } from "../services/workman/workman.service";
 import ApiResponse from "../misc/api.response.class";
 import { CompanyService } from "../services/company/company.service";
@@ -7,7 +7,7 @@ import { JwtRefreshDataDto } from "../dtos/auth/jwt.refresh.data.dto";
 import { Request } from "express";
 import { jwtRefreshSecret, jwtSecret, jwtTokenValidationSecret, jwtValidationSecret } from "../../config/jwt.secret";
 import * as jwt from "jsonwebtoken";
-import { LoginWorkmanInfoDto } from "../dtos/workman/login.workman.info.dto";
+import { LoginWorkmanInfoDto } from "../dtos/auth/login.workman.info.dto";
 import { JwtDataCompanyTokenValidation } from "../dtos/company/jwt.data.company.token.validation";
 import { CompanyMailer } from "../services/company/company.mailer.service";
 import { Workman } from "../entities/workman.entity";
@@ -17,6 +17,9 @@ import { WorkmanMailer } from "../services/workman/workman.mailer.service";
 import { CompanyRefreshTokenDto } from "../dtos/company/company.refresh.token.dto";
 import { JwtDataDto } from "../dtos/auth/jwt.data.dto";
 import { RefreshInfoDto } from "../dtos/auth/refresh.info.dto";
+import { LoginAdministratorDto } from "../dtos/auth/login.administrator.dto";
+import { AdministratorService } from "../services/administrator/administrator.service";
+import { LoginAdministratorInfoDto } from "../dtos/auth/login.administrator.info.dto";
 
 
 @Controller("auth") 
@@ -26,9 +29,63 @@ export class AuthController{
         private readonly workmanService:WorkmanService,
         private readonly companyService:CompanyService,
         private readonly companyMailer:CompanyMailer,
-        private readonly workmanMailer:WorkmanMailer
+        private readonly workmanMailer:WorkmanMailer,
+        private readonly administratorService:AdministratorService
     ){}
 
+    @Post("administrator/login")
+    async adminLogin(@Body() data:LoginAdministratorDto,@Req() req:Request){
+        const admin=await this.administratorService.getByUsername(data.username);
+        if(!admin)
+            return new ApiResponse("error",-3005);
+
+        const crypto=require("crypto");
+        const passwordHash=crypto.createHash("sha512");
+        passwordHash.update(data.password);
+        const passwordHashString=passwordHash.digest("hex").toUpperCase();
+
+        if(passwordHashString!==admin.passwordHash)
+            return new ApiResponse("error",-3005);
+
+        const jwtRefreshData=new JwtRefreshDataDto();
+        jwtRefreshData.role="administrator";
+        jwtRefreshData.identity=admin.username;
+        jwtRefreshData.id=admin.administratorId;
+        jwtRefreshData.ip=req.ip.toString();
+        jwtRefreshData.ua=req.headers["user-agent"];
+    
+        let currentTime=new Date();
+        currentTime.setDate(currentTime.getDate()+14);
+        const expires=currentTime.getTime()/1000;
+    
+        jwtRefreshData.exp=expires;
+    
+        const refresToken=jwt.sign(jwtRefreshData.toPlain(),jwtRefreshSecret);
+
+        const newAdminToken=await this.administratorService.newToken(refresToken,admin.administratorId,currentTime);
+
+        const jwtData=new JwtDataDto();
+        jwtData.role="administrator";
+        jwtData.identity=admin.username;
+        jwtData.id=admin.administratorId;
+        jwtData.ip=req.ip.toString();
+        jwtData.ua=req.headers["user-agent"];
+
+        const expAt=new Date();
+        expAt.setMinutes(expAt.getMinutes()+5);
+
+        jwtData.exp=expAt.getTime()/1000;
+
+        const token = jwt.sign(jwtData.toPlain(),jwtSecret);
+
+        const loginInfo=new LoginAdministratorInfoDto();
+        loginInfo.refreshToken=refresToken;
+        loginInfo.token=token;
+
+        return loginInfo;
+
+    }
+    
     @Post("workman/login")
     async  workmanLogin(@Body() data:LoginWorkmanDto,@Req() req:Request){
         const workman = await this.workmanService.getByEmail(data.email);
@@ -109,7 +166,7 @@ export class AuthController{
 
         return await this.companyService.validateToken(jwtData.companyTokenId);
     }
-    @Post("newWorkman")
+    @Post("workman/register")
     async newWorkman(@Body() data:AddWorkmanDto){
         const company=await this.companyService.getByCompanyName(data.companyName);
         if(!company)
