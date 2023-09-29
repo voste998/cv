@@ -88,20 +88,10 @@ export class AuthController{
     
     @Post("workman/login")
     async  workmanLogin(@Body() data:LoginWorkmanDto,@Req() req:Request){
-        const workman = await this.workmanService.getByEmail(data.email);
-        if(!workman)
-            return new ApiResponse("error",-2002);
-
         
-        if(workman.isValid[0]===0)
-            return new ApiResponse("error",-3003)
-
         const company= await this.companyService.getByCompanyName(data.companyName);
         if(!company)
             return new ApiResponse("error",-1002);
-
-        if(company.companyId!==workman.companyId)
-            return new ApiResponse("error",-3001);
 
         const crypto=require("crypto");
         const passwordHash=crypto.createHash("sha512");
@@ -111,6 +101,16 @@ export class AuthController{
         if(passwordHashString!==company.passwordHash)
             return new ApiResponse("error",-3002);
 
+        const workman = await this.workmanService.getByEmail(data.email);
+        if(!workman)
+            return new ApiResponse("error",-2002);
+    
+        if(company.companyId!==workman.companyId)
+            return new ApiResponse("error",-2002);
+
+        if(workman.isValid[0]===0)
+            return new ApiResponse("error",-3003)
+        
         const jwtRefreshData=new JwtRefreshDataDto();
         jwtRefreshData.role="workman";
         jwtRefreshData.identity=workman.email;
@@ -209,7 +209,7 @@ export class AuthController{
     }
 
 
-    @Post("company/refresh")
+    @Post("workman/refresh")
     async refreshCompanyToken(@Body() data:CompanyRefreshTokenDto,@Req() req:Request){
         const token=await this.companyService.getCompanyToken(data.refreshToken);
 

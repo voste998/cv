@@ -57,12 +57,47 @@ export class CartService{
     
     }
 
-    async nextWorkmanCart(workmanId:number):Promise<any>{
+    async test(workmanId:number,status:"next"|"current"):Promise<any>{
         return await this.mealCartWorkman.find({
             where:{
                 workmanId:workmanId,
-                status:"next"
+                status:status
             }
         });
+    }
+
+    async workmanCart(workmanId:number,status:"next"|"current"|"previous"){
+        const carts=await this.cart.find({
+            where:{
+                status:status==="previous"?"other":status,
+                mealCarts:{
+                    workmanId:workmanId
+                }
+            },
+            relations:["mealCarts.meal"],
+            select:{
+                cartId:true,
+                createdAt:true,
+                status:true,
+                mealCarts:{
+                    mealCartId:true,
+                    meal:{
+                        mealId:true,
+                        name:true,
+                        day:true
+                    }
+                }
+            },
+            order:{
+                createdAt:"DESC"
+            },
+            skip:0,
+            take:1
+        });
+        
+        if(carts.length!==0)
+            return carts[0];
+
+        
     }
 }

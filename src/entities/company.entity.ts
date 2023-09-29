@@ -22,6 +22,9 @@ export class Company {
   @Column({type:"varchar", name: "password_hash", length: 256 })
   passwordHash: string;
 
+  @Column({type:"varchar", name: "address", length: 128 })
+  address: string;
+
   @Column({type:"smallint",  name: "workpeople", unsigned: true })
   workpeople: number;
 

@@ -1,4 +1,4 @@
-import { Controller , Post ,Body, Delete, Param, UseGuards,UseInterceptors ,Req, UploadedFile} from "@nestjs/common";
+import { Controller , Post ,Body, Delete, Param, UseGuards,UseInterceptors ,Req, UploadedFile, Get} from "@nestjs/common";
 import { MealService } from "../services/meal/meal.service";
 import { AddMealDto } from "../dtos/meal/add.meal.dto";
 import ApiResponse from "../misc/api.response.class";
@@ -14,6 +14,7 @@ import { PhotoService } from "../services/photo/photo.service";
 import filetype from "magic-bytes.js";
 import * as fs from "fs";
 import * as sharp from "sharp";
+import { MealFilterDataDto } from "../dtos/meal/meal.filter.data.dto";
 
 
 @Controller("api/meal")
@@ -22,6 +23,13 @@ export class MealController{
         private readonly mealService:MealService,
         private readonly photoService:PhotoService
     ){}
+    
+    @UseGuards(RoleCheckedGuard)
+    @Roles("administrator","workman")
+    @Post("mealFilter")
+    async mealFilter(@Body() data:MealFilterDataDto){
+        return await this.mealService.mealFilter(data);
+    }
 
     @UseGuards(RoleCheckedGuard)
     @Roles("administrator")

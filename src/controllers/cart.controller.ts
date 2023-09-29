@@ -4,6 +4,7 @@ import { AddCartMealDto } from "../dtos/cart/add.cart.meal.dto";
 import { CartService } from "../services/cart/cart.service";
 import { RoleCheckedGuard } from "../misc/role.checked.guard";
 import { Roles } from "../misc/roles.descriptor";
+import { WorkmanCartDataDto } from "../dtos/cart/workman.cart.data.dto";
 
 @Controller("api/cart")
 export class CartControler{
@@ -20,8 +21,8 @@ export class CartControler{
     
     @UseGuards(RoleCheckedGuard)
     @Roles("workman")
-    @Get("nextWorkmanCart")
-    async nextWorkmanCart(@Req() req:Request){
-        return await this.cartService.nextWorkmanCart(req.token.id);
+    @Post("workmanCart")
+    async workmanCart(@Req() req:Request,@Body() data:WorkmanCartDataDto){
+        return await this.cartService.workmanCart(req.token.id,data.status);
     }
 }

@@ -30,6 +30,7 @@ import { MealCartWorkman } from './entities/meal.cart.workman.entity';
 import { MealController } from './controllers/meal.controller';
 import { PhotoService } from './services/photo/photo.service';
 import { AdministratorController } from './controllers/administrator.controller';
+import { WorkmanController } from './controllers/workman.controller';
 
 @Module({
   imports: [
@@ -61,7 +62,7 @@ import { AdministratorController } from './controllers/administrator.controller'
       }
     })
   ],
-  controllers: [CompanyController,AuthController,CartControler,MealController,AdministratorController],
+  controllers: [CompanyController,AuthController,CartControler,MealController,AdministratorController,WorkmanController],
   providers: [CompanyService,WorkmanService,WorkmanMailer,CompanyMailer,
     AdministratorService,CartService,MealService,PhotoService],
   exports:[AdministratorService,WorkmanService]
@@ -70,6 +71,6 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer.apply(AuthMiddleware).
         exclude().
-        forRoutes("api/company/*","api/cart/*","api/meal/*","api/administrator/*")
+        forRoutes("api/company/*","api/cart/*","api/meal/*","api/administrator/*","api/workman/*")
     }
 }

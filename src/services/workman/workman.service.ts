@@ -54,4 +54,39 @@ export class WorkmanService{
             }
         });
     }
+
+    async workmanPlainInfo(workmanId:number){
+        const builder = this.workman.createQueryBuilder("wor");
+        builder.where(`wor.workman_id=${workmanId}`);
+        builder.innerJoin(Company,"com","com.company_id=wor.company_id");
+        builder.select("wor.name as name");
+        builder.addSelect("wor.lastname as lastname");
+        builder.addSelect("wor.email as email");
+        builder.addSelect("com.name as companyName");
+        return await builder.getRawOne();
+    }
+    async workmanInfo(workmanId:number){
+        return this.workman.findOne({
+            where:{
+                workmanId:workmanId
+            },
+            relations:["company.companyDays"],
+            select:{
+                workmanId:true,
+                name:true,
+                lastname:true,
+                email:true,
+                company:{
+                    companyId:true,
+                    name:true,
+                    workpeople:true,
+                    address:true,
+                    companyDays:{
+                        companyDayId:true,
+                        day:true
+                    }
+                }
+            }
+        });
+    }
 }

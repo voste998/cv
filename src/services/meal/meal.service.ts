@@ -5,6 +5,8 @@ import { InjectRepository } from "@nestjs/typeorm";
 import ApiResponse from "../../misc/api.response.class";
 import { AddMealDto } from "../../dtos/meal/add.meal.dto";
 import { MealComponent } from "../../entities/meal.component.entity";
+import { MealFilterDataDto } from "../../dtos/meal/meal.filter.data.dto";
+import { Photo } from "../../entities/photo.entity";
 
 @Injectable()
 export class MealService{
@@ -12,6 +14,24 @@ export class MealService{
         @InjectRepository(Meal) private readonly meal:Repository<Meal>,
         @InjectRepository(MealComponent) private readonly mealComponent:Repository<MealComponent>
     ){}
+    async mealFilter(data:MealFilterDataDto){
+        const builder = this.meal.createQueryBuilder("meal");
+        builder.where(`meal.day='${data.day}'`);
+        if(data.offer)
+            builder.andWhere(`meal.offer='${data.offer}'`);
+        
+        builder.leftJoin(Photo,"photo","photo.meal_id=meal.meal_id");
+        
+        builder.select("meal.meal_id as mealId");
+        builder.addSelect("meal.name as name");
+        builder.addSelect("meal.description as description");
+        builder.addSelect("meal.offer as offer");
+        builder.addSelect("meal.day as day");
+        builder.addSelect("photo.photo_id as photoId");
+        builder.addSelect("photo.image_path as imagePath");
+
+        return await builder.getRawMany();
+    }
 
     async getMealById(id:number):Promise<Meal|ApiResponse>{
         const meal= await this.meal.findOne({
@@ -26,12 +46,13 @@ export class MealService{
     }
     
     async newMeal(data:AddMealDto):Promise<Meal|ApiResponse>{
-        ;
+        
         let newMeal:Meal=new Meal();
         newMeal.name=data.name;
         newMeal.day=data.day;
         newMeal.offer=data.offer;
-        
+        newMeal.description=data.description;
+
         newMeal=await this.meal.save(newMeal);
 
         if(!newMeal)

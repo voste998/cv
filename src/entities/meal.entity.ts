@@ -22,6 +22,9 @@ export class Meal {
   @Column({type:"enum",  name: "offer", enum: ["constant", "exchangeable"] })
   offer: "constant" | "exchangeable";
 
+  @Column({type:"varchar",length:512,name:"description"})
+  description:string;
+
   @Column({type:"enum",  name: "day", enum: ["0", "1", "2", "3", "4", "5", "6"] })
   day: "0" | "1" | "2" | "3" | "4" | "5" | "6";
 

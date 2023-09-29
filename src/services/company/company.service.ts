@@ -26,6 +26,7 @@ export class CompanyService{
         newCompany.name=data.name;
         newCompany.passwordHash=passwordHashString;
         newCompany.workpeople=data.workpeople;
+        newCompany.address=data.address;
         
         const savedCompany=await this.company.save(newCompany);
         for(let day of data.days){
@@ -71,6 +72,7 @@ export class CompanyService{
         company.passwordHash=passwordHashString;
         company.name=data.name;
         company.workpeople=data.workpeople;
+        company.address=data.address;
 
         return await this.company.save(company);
         
