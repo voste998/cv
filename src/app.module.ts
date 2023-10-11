@@ -71,6 +71,6 @@ export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer.apply(AuthMiddleware).
         exclude().
-        forRoutes("api/company/*","api/cart/*","api/meal/*","api/administrator/*","api/workman/*")
+        forRoutes("api/company/*","api/cart/*","api/meal/*","api/administrator/*","api/workman/*","auth/workman/tokenCheck")
     }
 }

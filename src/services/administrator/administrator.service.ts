@@ -72,4 +72,12 @@ export class AdministratorService{
 
         return await this.administratorToken.save(newToken);
     }
+
+    async getAdminToken(token:string){
+        return await this.administratorToken.findOne({
+            where:{
+                token:token
+            }
+        });
+    }
 }

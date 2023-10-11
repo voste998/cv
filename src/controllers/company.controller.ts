@@ -14,7 +14,7 @@ export class CompanyController{
     ){}
     
     @UseGuards(RoleCheckedGuard)
-    @Roles("administrator")
+    @Roles("workman")
     @Post("createNew")
     createNew(@Body() data:AddCompanyDto){
         return this.companyService.createNewCompany(data);
@@ -25,6 +25,13 @@ export class CompanyController{
     @Post("editFull/:id")
     editFull(@Param("id") id:number,@Body() data:EditCompanyDto){
         return this.companyService.editCompany(id,data);
+    }
+
+    @UseGuards(RoleCheckedGuard)
+    @Roles("administrator")
+    @Post("getAll")
+    getAll(){
+        return this.companyService.getAll();
     }
    
     

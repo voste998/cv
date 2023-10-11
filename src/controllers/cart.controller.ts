@@ -1,4 +1,4 @@
-import { Body, Controller, Req ,Post, Get, SetMetadata, UseGuards } from "@nestjs/common";
+import { Body, Controller, Req ,Post, Get, SetMetadata, UseGuards, Delete, Param } from "@nestjs/common";
 import { Request } from "express";
 import { AddCartMealDto } from "../dtos/cart/add.cart.meal.dto";
 import { CartService } from "../services/cart/cart.service";
@@ -24,5 +24,13 @@ export class CartControler{
     @Post("workmanCart")
     async workmanCart(@Req() req:Request,@Body() data:WorkmanCartDataDto){
         return await this.cartService.workmanCart(req.token.id,data.status);
+    }
+
+    @UseGuards(RoleCheckedGuard)
+    @Roles("workman")
+    @Delete("deleteCartMeal/:mealCartId")
+    async deleteCartMeal(@Param("mealCartId") id:number,@Req() req:Request){
+        console.log(id,req.token.id)
+        return await this.cartService.deleteCartMeal(id,req.token.id);
     }
 }

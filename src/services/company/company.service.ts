@@ -16,12 +16,20 @@ export class CompanyService{
         @InjectRepository(CompanyToken) private readonly companyToken:Repository<CompanyToken>
     ){}
     
-    async createNewCompany(data:AddCompanyDto):Promise<Company>{
+    async createNewCompany(data:AddCompanyDto):Promise<Company|ApiResponse>{
         const crypto=require("crypto");
         const passwordHash=crypto.createHash("sha512");
         passwordHash.update(data.password);
         const passwordHashString=passwordHash.digest("hex").toUpperCase();
         
+        const company=await this.company.findOne({
+            where:{
+                name:data.name
+            }
+        });
+        if(company)
+            return new ApiResponse("error",-1002);
+
         const newCompany=new Company();
         newCompany.name=data.name;
         newCompany.passwordHash=passwordHashString;
@@ -29,11 +37,13 @@ export class CompanyService{
         newCompany.address=data.address;
         
         const savedCompany=await this.company.save(newCompany);
-        for(let day of data.days){
+        for(let day of data.companyDays){
             let newDay=new CompanyDay();
             newDay.companyId=savedCompany.companyId;
             newDay.day=day;
-            await this.companyDay.save(newDay);
+            try{
+                await this.companyDay.save(newDay);
+            }catch(e){}
         }
         return savedCompany;
     }
@@ -130,6 +140,15 @@ export class CompanyService{
                 token:token
             }
         });
+    }
+
+    async getAll(){
+        return this.company.find({
+            select:{
+                passwordHash:false
+            },
+            relations:["companyDays"]
+        })
     }
 
 } 

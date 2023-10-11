@@ -1,4 +1,4 @@
-import { Body, Controller,Get,Param,Post,Req,HttpException,HttpStatus } from "@nestjs/common";
+import { Body, Controller,Get,Param,Post,Req,HttpException,HttpStatus, UseGuards } from "@nestjs/common";
 import { LoginWorkmanDto } from "../dtos/auth/login.workman.dto";
 import { WorkmanService } from "../services/workman/workman.service";
 import ApiResponse from "../misc/api.response.class";
@@ -20,6 +20,9 @@ import { RefreshInfoDto } from "../dtos/auth/refresh.info.dto";
 import { LoginAdministratorDto } from "../dtos/auth/login.administrator.dto";
 import { AdministratorService } from "../services/administrator/administrator.service";
 import { LoginAdministratorInfoDto } from "../dtos/auth/login.administrator.info.dto";
+import { Roles } from "../misc/roles.descriptor";
+import { RoleCheckedGuard } from "../misc/role.checked.guard";
+import { AdministratorRefreshTokenDto } from "../dtos/administrator/administrator.refresh.token.dto";
 
 
 @Controller("auth") 
@@ -249,6 +252,75 @@ export class AuthController{
 
         const jwtData:JwtDataDto=new JwtDataDto();
         jwtData.role="workman";
+        jwtData.id=jwtRefreshData.id;
+        jwtData.identity=jwtRefreshData.identity;
+        jwtData.companyId=jwtRefreshData.companyId;
+        jwtData.ip=jwtRefreshData.ip;
+        jwtData.ua=jwtRefreshData.ua;
+
+        const expAt=new Date();
+        expAt.setMinutes(expAt.getMinutes()+5);
+
+        jwtData.exp=expAt.getTime()/1000;
+
+        const newToken=jwt.sign(jwtData.toPlain(),jwtSecret);
+
+        const refreshInfo:RefreshInfoDto={
+            token:newToken,
+            refreshToken:data.refreshToken
+        };
+
+        return refreshInfo;
+    }
+
+    @UseGuards(RoleCheckedGuard)
+    @Roles("workman")
+    @Get("workman/tokenCheck")
+    workmanTokenCheck(){
+        return new ApiResponse("ok",1000);
+    }
+
+    @Post("administrator/refresh")
+    async refreshAdminToken(@Body() data:AdministratorRefreshTokenDto,@Req() req:Request){
+        const token=await this.administratorService.getAdminToken(data.refreshToken);
+
+        if(!token)
+            return new ApiResponse("error",3010,"Token ne postoji!");
+
+        if(token.isValid[0]===0)
+            return new ApiResponse("error",3011,"Token nije validan!");
+
+        const admin=await this.administratorService.getById(token.administratorId);
+
+        if(!admin)
+            return new ApiResponse("error",3012,"Nepostojeci administrator!");
+        
+        const expTime=token.expiresAt.getTime();
+        const currentTime=new Date().getTime();
+
+        if(expTime < currentTime)
+            return new ApiResponse("error",-3013,"Isteklo vazenje tokena!");
+
+        let jwtRefreshData:JwtRefreshDataDto;
+
+        try{
+            jwtRefreshData=jwt.verify(data.refreshToken,jwtRefreshSecret);
+        }catch(e){
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+        }
+        
+
+        if(!jwtRefreshData)
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+        
+        if(jwtRefreshData.ip!==req.ip.toString())
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+        
+        if(jwtRefreshData.ua!==req.headers["user-agent"])
+            throw new HttpException("Ne vazeci token!",HttpStatus.UNAUTHORIZED);
+
+        const jwtData:JwtDataDto=new JwtDataDto();
+        jwtData.role="administrator";
         jwtData.id=jwtRefreshData.id;
         jwtData.identity=jwtRefreshData.identity;
         jwtData.companyId=jwtRefreshData.companyId;

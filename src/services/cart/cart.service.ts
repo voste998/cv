@@ -100,4 +100,20 @@ export class CartService{
 
         
     }
+    async deleteCartMeal(mealCartId:number,workmanId:number){
+        const mealCart=await this.mealCart.findOne({
+            where:{
+                mealCartId:mealCartId,
+                workmanId:workmanId
+            },
+            relations:["cart"]
+        });
+        if(!mealCart)
+            return new ApiResponse("error",5002);
+
+        if(mealCart.cart.status!=="next")
+            return new ApiResponse("error",5003);
+
+        return await this.mealCart.delete(mealCart);
+    }
 }
