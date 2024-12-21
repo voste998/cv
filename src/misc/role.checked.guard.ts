@@ -13,7 +13,7 @@ export class RoleCheckedGuard implements CanActivate{
         const req:Request=context.switchToHttp().getRequest();
 
         const roles=this.reflector.
-                    get<("administrator"|"workman")[]>("roles",context.getHandler());
+                    get<("administrator"|"user")[]>("roles",context.getHandler());
         
         return roles.includes(req.token.role);
     }

@@ -1,17 +1,17 @@
 import { NestMiddleware,HttpException,HttpStatus, Injectable } from "@nestjs/common";
 import { NextFunction,Request,Response } from "express";
 import { AdministratorService } from "../services/administrator/administrator.service";
-import { WorkmanService } from "../services/workman/workman.service";
 import { JwtDataDto } from "../dtos/auth/jwt.data.dto";
 import * as jwt from "jsonwebtoken";
 import { jwtSecret } from "../../config/jwt.secret";
+import { UserService } from "../services/user/user.service";
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware{
 
     constructor(
         private readonly administratorService:AdministratorService,
-        private readonly workmanService:WorkmanService
+        private readonly userService:UserService
     ){}
 
     async use(req:Request,res:Response,next:NextFunction){
@@ -40,9 +40,9 @@ export class AuthMiddleware implements NestMiddleware{
             if(!admin)
                 throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
         }
-        else if(jwtData.role==="workman"){
-            let workman=await this.workmanService.getValidById(jwtData.id);
-            if(!workman)
+        else if(jwtData.role==="user"){
+            let user=await this.userService.getById(jwtData.id);
+            if(!user)
                 throw new HttpException("Ne vazeci token",HttpStatus.UNAUTHORIZED);
         }
         

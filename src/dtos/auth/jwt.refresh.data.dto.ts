@@ -1,8 +1,7 @@
 export class JwtRefreshDataDto{
-    role:"administrator"|"workman";
+    role:"administrator"|"user";
     id:number;
     identity:string;
-    companyId?:number;
     exp:number;
     ip:string;
     ua:string;
@@ -16,9 +15,7 @@ export class JwtRefreshDataDto{
             ip:this.ip,
             ua:this.ua
         }
-        if(!this.companyId)
-            return jwtRefreshData;
 
-        return {...jwtRefreshData,companyId:this.companyId};
+        return jwtRefreshData;
     }
 }

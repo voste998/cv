@@ -3,35 +3,18 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseConfiguration } from '../config/database.configuration';
 import { Administrator } from './entities/administrator.entity';
 import { AdministratorToken } from './entities/administrator.token.entity';
-import { Cart } from './entities/cart.entity';
-import { CompanyDay } from './entities/company.day.entity';
-import { Company } from './entities/company.entity';
-import { CompanyToken } from './entities/company.token.entity';
-import { Component } from './entities/component.entity';
-import { MealCart } from './entities/meal.cart.entity';
-import { MealComponent } from './entities/meal.component.entity';
-import { Meal } from './entities/meal.entity';
-import { Photo } from './entities/photo.entity';
-import { Workman } from './entities/workman.entity';
-import { CompanyController } from './controllers/company.controller';
-import { CompanyService } from './services/company/company.service';
-import { MailerModule } from '@nestjs-modules/mailer';
-import { MailConfig } from "../config/mail.config";
-import { WorkmanService } from './services/workman/workman.service';
-import { WorkmanMailer } from './services/workman/workman.mailer.service';
 import { AuthController } from './controllers/auth.controller';
-import { CompanyMailer } from './services/company/company.mailer.service';
-import { AuthMiddleware } from './middlewares/auth.middleware';
-import { AdministratorService } from './services/administrator/administrator.service';
-import { CartControler } from './controllers/cart.controller';
-import { CartService } from './services/cart/cart.service';
-import { MealService } from './services/meal/meal.service';
-import { MealCartWorkman } from './entities/meal.cart.workman.entity';
-import { MealController } from './controllers/meal.controller';
-import { PhotoService } from './services/photo/photo.service';
 import { AdministratorController } from './controllers/administrator.controller';
-import { WorkmanController } from './controllers/workman.controller';
-
+import { AdministratorService } from './services/administrator/administrator.service';
+import { AuthMiddleware } from './middlewares/auth.middleware';
+import { User } from './entities/user.entity';
+import { UserToken } from './entities/user.token.entity';
+import { UserController } from './controllers/user.controller';
+import { UserService } from './services/user/user.service';
+import { ChatModule } from './chat/chat.module';
+import { Session } from './entities/session.entity';
+import { MessageService } from './services/message/message.service';
+import { Message } from './entities/message.entity';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -42,35 +25,21 @@ import { WorkmanController } from './controllers/workman.controller';
       username:DatabaseConfiguration.username,
       password:DatabaseConfiguration.password,
       entities:[
-        Administrator,AdministratorToken,Cart,
-        CompanyDay,Company,CompanyToken,
-        Component,MealCart,MealComponent,
-        Meal,Photo,Workman,MealCartWorkman
+        Administrator,AdministratorToken,User,UserToken,Session,Message
       ]
     }),TypeOrmModule.forFeature([
-      Administrator,AdministratorToken,Cart,
-      CompanyDay,Company,CompanyToken,
-      Component,MealCart,MealComponent,
-      Meal,Photo,Workman,MealCartWorkman
-    ]),
-    MailerModule.forRoot({
-      transport: "smtps://"+MailConfig.username+":"
-                           +MailConfig.password+"@"
-                           +MailConfig.hostname,
-      defaults:{
-        from:MailConfig.senderEmail,
-      }
-    })
+      Administrator,AdministratorToken,User,UserToken,Session,Message
+    ]), ChatModule,
+    
   ],
-  controllers: [CompanyController,AuthController,CartControler,MealController,AdministratorController,WorkmanController],
-  providers: [CompanyService,WorkmanService,WorkmanMailer,CompanyMailer,
-    AdministratorService,CartService,MealService,PhotoService],
-  exports:[AdministratorService,WorkmanService]
+  controllers: [AuthController,AdministratorController,UserController],
+  providers: [AdministratorService,UserService,MessageService],
+  exports:[AdministratorService,UserService]
 }) 
 export class AppModule implements NestModule {
     configure(consumer: MiddlewareConsumer) {
         consumer.apply(AuthMiddleware).
-        exclude().
-        forRoutes("api/company/*","api/cart/*","api/meal/*","api/administrator/*","api/workman/*","auth/workman/tokenCheck")
+        exclude("api/administrator/createNew","api/user/createNew").
+        forRoutes("api/administrator/*","api/user/*","auth/isAuthenticated")
     }
 }

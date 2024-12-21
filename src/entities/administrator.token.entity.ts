@@ -9,7 +9,7 @@ import {
 import { Administrator } from "./administrator.entity";
 
 @Index("fk_administrator_token_administrator_id", ["administratorId"], {})
-@Entity("administrator_token", { schema: "altera_ketering" })
+@Entity("administrator_token", { schema: "auth_app" })
 export class AdministratorToken {
   @PrimaryGeneratedColumn({
     type: "int",
@@ -34,7 +34,7 @@ export class AdministratorToken {
   @Column({type:"datetime",  name: "expires_at" })
   expiresAt: Date;
 
-  @Column({type:"bit",  name: "is_valid", default: () => "'b'0''" })
+  @Column({type:"bit",  name: "is_valid" })
   isValid: boolean;
 
   @ManyToOne(

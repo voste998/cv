@@ -1,4 +1,4 @@
-import { Body, Controller, Post, UseGuards } from "@nestjs/common";
+import { Body, Controller, Get, Post, UseGuards } from "@nestjs/common";
 import { AdministratorService } from "../services/administrator/administrator.service";
 import { AddAdministratorDto } from "../dtos/administrator/add.administrator.dto";
 import { RoleCheckedGuard } from "../misc/role.checked.guard";
@@ -11,10 +11,15 @@ export class AdministratorController{
         private readonly administratorService:AdministratorService
     ){}
 
-    @UseGuards(RoleCheckedGuard)
-    @Roles("administrator")
+   /* @UseGuards(RoleCheckedGuard)
+    @Roles("administrator")*/
     @Post("createNew")
     async createNew(@Body() data:AddAdministratorDto){
         return await this.administratorService.createNew(data);
+    }
+
+    @Get("test")
+    async testMetod(){
+        return "test"
     }
 }
