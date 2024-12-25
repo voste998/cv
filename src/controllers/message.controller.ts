@@ -9,13 +9,7 @@ export class MessageController {
   constructor(private readonly messageService: MessageService) {}
 
 
-  @Post('send')
-  async sendMessage(
-    @Body() sendMessageDto: SendMessageDto,
-  ) {
-    const { senderId, receiverId, content, type } = sendMessageDto;
-    return this.messageService.sendMessage(senderId, receiverId, content, type);
-  }
+  
 
   
   @Get(':senderId/:receiverId')

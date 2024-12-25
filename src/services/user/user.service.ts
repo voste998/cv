@@ -14,7 +14,6 @@ export class UserService{
     ){}
 
     async createNew(data:AddUserDto):Promise<ApiResponse|User>{
-        console.log("met",data.email)
         const user=await this.user.findOne({
             where:{
                 email:data.email

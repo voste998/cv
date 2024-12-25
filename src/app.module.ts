@@ -12,9 +12,10 @@ import { UserToken } from './entities/user.token.entity';
 import { UserController } from './controllers/user.controller';
 import { UserService } from './services/user/user.service';
 import { ChatModule } from './chat/chat.module';
-import { Session } from './entities/session.entity';
 import { MessageService } from './services/message/message.service';
 import { Message } from './entities/message.entity';
+import {Session} from './entities/session.entity'
+import { MessageController } from './controllers/message.controller';
 @Module({
   imports: [
     TypeOrmModule.forRoot({
@@ -25,14 +26,14 @@ import { Message } from './entities/message.entity';
       username:DatabaseConfiguration.username,
       password:DatabaseConfiguration.password,
       entities:[
-        Administrator,AdministratorToken,User,UserToken,Session,Message
+        Administrator,AdministratorToken,User,UserToken,Message,Session
       ]
     }),TypeOrmModule.forFeature([
-      Administrator,AdministratorToken,User,UserToken,Session,Message
+      Administrator,AdministratorToken,User,UserToken,Message
     ]), ChatModule,
     
   ],
-  controllers: [AuthController,AdministratorController,UserController],
+  controllers: [AuthController,AdministratorController,UserController,MessageController],
   providers: [AdministratorService,UserService,MessageService],
   exports:[AdministratorService,UserService]
 }) 

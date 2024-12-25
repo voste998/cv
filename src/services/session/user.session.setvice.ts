@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository } from "typeorm";
 import { Session } from "../../entities/session.entity";
+import { Server } from "socket.io";
 
 @Injectable()
 export class UserSessionService {
@@ -48,13 +49,31 @@ export class UserSessionService {
   }
 
   
-  public async removeUserSession(userId: number, targetUserId: number): Promise<void> {
-    const sessions = await this.sessionRepository.find({
-      where: { userId, targetUserId },
+  public async updateLastActiveTime(userId: number, socketId: string): Promise<void> {
+    const session = await this.sessionRepository.findOne({
+      where: { userId, socketId },
     });
-    if (sessions.length === 0) {
-
-      await this.sessionRepository.delete({ userId, targetUserId });
+    if (session) {
+      session.updatedAt = new Date(); 
+      await this.sessionRepository.save(session);
     }
   }
+
+  
+  public async checkInactiveSessions() {
+    const INACTIVITY = 30 * 60 * 1000; 
+    const currentTime = new Date();
+
+    const sessions = await this.sessionRepository.find();
+
+    for (const session of sessions) {
+      const lastActive = session.updatedAt.getTime();
+      const inactivityDuration = currentTime.getTime() - lastActive;
+
+      if (inactivityDuration > INACTIVITY) {
+        await this.removeSocketFromSession(session.userId, session.socketId, session.targetUserId);
+      }
+    }
+  }
+
 }

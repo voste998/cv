@@ -19,7 +19,10 @@ export class Session {
   @Column({ name:"connected_at",type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
   connectedAt: Date;
 
+  @Column({ name:"updated_at",type: 'timestamp', default: () => 'CURRENT_TIMESTAMP' })
+  updatedAt: Date;
 
-  @Column({name:"target_user_id", type: 'int', unsigned:true})
-  targetUserId: number;
+
+  @Column({name:"target_user_id", type: 'int', unsigned:true, default:()=>null})
+  targetUserId: number|null;
 }

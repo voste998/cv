@@ -1,5 +1,5 @@
 import { HttpException, HttpStatus } from "@nestjs/common";
-import {  MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import {  ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server } from "socket.io";
 import { Socket }   from "socket.io";
 import { UserSessionService } from "../services/session/user.session.setvice";
@@ -8,21 +8,30 @@ import { jwtSecret } from "../../config/jwt.secret";
 import { MessageService } from "../services/message/message.service";
 import { SendMessageDto } from "../dtos/message/send.message.dto";
 import ApiResponse from "../misc/api.response.class";
+import { MarkMessagesAsReadDto } from "../dtos/message/mark.message.as.read.dto";
+import { SessionCleanerService } from "../services/session/session.cleaner.service";
 
 
 
-@WebSocketGateway(3002,{})
+@WebSocketGateway(3002, {
+  cors: {
+    origin: '*', 
+  },
+})
 export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
 
     @WebSocketServer() server:Server;
 
     constructor(
       private readonly userSessionService: UserSessionService,
-      private readonly messageService:MessageService
-    ) {}
+      private readonly messageService:MessageService, 
+    ) {
+      
+    }
 
     
     async handleConnection(socket: Socket) {
+      
       try {
         
         const token = (socket.handshake.query.token as string)?.split(' ')[1];
@@ -43,11 +52,11 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
         await this.userSessionService.addSocketToSession(decoded.id, socket.id, Number(targetUserId));
   
         
-        socket.data.user = { ...decoded, targetUserId: targetUserId };
+        socket.data.user = { ...decoded, targetUserId: Number(targetUserId) };
   
       } catch (error) {
         socket.emit('message', { content: 'Error connecting to the server' });
-        socket.disconnect();
+        socket.disconnect(true);
       }
     }
   
@@ -55,15 +64,11 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
     async handleDisconnect(socket: Socket) {
       try {
         const user = socket.data.user;
-        if (user && user.id && user.targetUserId) {
-          
-          await this.userSessionService.removeSocketFromSession(user.id, socket.id, user.targetUserId);
-  
-         /* const remainingSockets = await this.userSessionService.getTargetSockets(user.id, user.targetUserId);
-          if (remainingSockets.length === 0) {
-            await this.userSessionService.removeUserSession(user.id, user.targetUserId);
-          }*/
-         
+
+        this.server.sockets.sockets.get(socket.id)?.disconnect(true);
+        
+        if (user.id) {
+          this.userSessionService.removeSocketFromSession(user.id, socket.id, user.targetUserId);
         }
       } catch (error) {
         console.error('Error during disconnect:', error);
@@ -71,16 +76,19 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
     }
   
     @SubscribeMessage('sendMessage')
-    async handleSendMessage(@MessageBody() data:SendMessageDto, socket: Socket) {
-      const { senderId, receiverId, content, type } = data;
+    async handleSendMessage( @ConnectedSocket() socket: Socket,@MessageBody() message:string) {
+      const data:SendMessageDto=JSON.parse(message);
       
-      const newMessage=await this.messageService.sendMessage(senderId, receiverId, content, type);
+
+      this.userSessionService.updateLastActiveTime(data.senderId, socket.id);
+    
+      const newMessage=await this.messageService.sendMessage(data);
 
       if(newMessage instanceof ApiResponse){
         socket.emit("newMessageError",newMessage);
       }else{
         
-        const targetSockets = await this.userSessionService.getTargetSockets(senderId, receiverId);
+        const targetSockets = await this.userSessionService.getTargetSockets(data.senderId, data.receiverId);
 
         targetSockets.forEach(socketId => {
           this.server.to(socketId).emit('newMessage', { newMessage });
@@ -89,5 +97,25 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
       }
       
     }
-  
+    @SubscribeMessage('markMessageAsRead')
+    async markMessagesAsRead(@MessageBody() data:MarkMessagesAsReadDto,socket:Socket){
+      
+      let ids=await this.messageService.markMessagesAsRead(data.messageIds);
+
+      if(ids instanceof ApiResponse){
+          socket.emit("markError",{ids});
+        }else{
+          const targetSockets = await this.userSessionService.
+                  getTargetSockets(socket.data.user.id, socket.data.user.targetUserId);
+
+          targetSockets.forEach(socketId=>{
+            this.server.to(socketId).emit("markedMessages",{ids});
+          })
+
+        }
+    }
+    @SubscribeMessage('isTyping')
+    async isTyping(socket:Socket){
+      
+    }
 }

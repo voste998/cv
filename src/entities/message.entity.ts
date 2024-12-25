@@ -27,7 +27,7 @@ export class Message {
   @Column({type:'text',name:"content"})
   content: string; 
 
-  @Column({type:'boolean', name:"is_read", default: false })
+  @Column({type:'boolean', name:"is_read", default:false})
   isRead: boolean; 
 
   @Column({

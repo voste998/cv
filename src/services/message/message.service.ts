@@ -4,6 +4,7 @@ import { In, OptimisticLockVersionMismatchError, Repository } from 'typeorm';
 import { Message } from '../../entities/message.entity';
 import { MarkMessagesAsReadDto } from '../../dtos/message/mark.message.as.read.dto';
 import ApiResponse from '../../misc/api.response.class';
+import { SendMessageDto } from '../../dtos/message/send.message.dto';
 
 @Injectable()
 export class MessageService {
@@ -12,14 +13,16 @@ export class MessageService {
     private messageRepository: Repository<Message>,
   ) {}
 
-  async sendMessage(senderId: number, receiverId: number,
-     content: string, type:"text" | "image" | "file" | "video" = 'text'):Promise<Message|ApiResponse> {
-    const newMessage:Message=new Message();
-    newMessage.content=content;
-    newMessage.receiverId=receiverId;
-    newMessage.senderId=senderId;
-    newMessage.type=type;
-
+  async sendMessage(data:SendMessageDto):Promise<Message|ApiResponse> {
+    const {senderId,receiverId,type,content}=data
+    
+    const newMessage:Message={
+      type:type,
+      content:content, 
+      senderId:senderId,
+      receiverId:receiverId,
+    } as any
+    
     let newMessageData;
 
     try{
@@ -43,23 +46,27 @@ export class MessageService {
   }
 
   async markMessagesAsRead(messageIds:number[]):Promise<ApiResponse|MarkMessagesAsReadDto> {
-    const messages = await this.messageRepository.find(
+    let messages = await this.messageRepository.find(
       { where: { messageId: In(messageIds)  } 
     });
-    const messageIdsMarked:MarkMessagesAsReadDto={
-      messageIds:[]
-    }
-    for(let message of messages){
+    
+    for(let message of messages)
       message.isRead = true;
-      try{
-        await this.messageRepository.save(message);
-        messageIdsMarked.messageIds.push(message.messageId)
-      }catch(e){
-        return new ApiResponse("error",5001) 
-      }
       
+    try{
+      messages=await this.messageRepository.save(messages);
+    }catch(e){
+      return new ApiResponse("error",5001) 
+    }
+
+    const messageIdsMarked:MarkMessagesAsReadDto={
+
+      messageIds:messages.map(message=>{
+        return message.messageId;
+      })
+
     }
     
-    return messageIdsMarked;
+    return messageIdsMarked ;
   }
 }
