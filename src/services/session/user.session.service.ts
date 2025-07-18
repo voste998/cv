@@ -35,6 +35,17 @@ export class UserSessionService {
       await this.sessionRepository.remove(session);
     }
   }
+  public async removeSocketById(socketId:string){
+
+    const session = await this.sessionRepository.findOne({
+      where:{
+        socketId:socketId
+      }
+    });
+    if(session)
+      await this.sessionRepository.remove(session);
+    
+  }
 
   
   public async getTargetSockets(senderId: number, receiverId: number): Promise<string[]> {
@@ -46,6 +57,19 @@ export class UserSessionService {
     });
     
     return sessions.map(session => session.socketId);
+  }
+
+  public async getReceiverSockets(senderId:number,receiverId:number){
+    
+    const sessions = await this.sessionRepository.find({
+      where:{
+        userId:receiverId,
+        targetUserId:senderId
+      }
+    });
+    
+    return sessions.map(session => session.socketId);
+
   }
 
   
@@ -65,15 +89,20 @@ export class UserSessionService {
     const currentTime = new Date();
 
     const sessions = await this.sessionRepository.find();
+    const socketIds:string[]=[];
 
     for (const session of sessions) {
       const lastActive = session.updatedAt.getTime();
       const inactivityDuration = currentTime.getTime() - lastActive;
 
       if (inactivityDuration > INACTIVITY) {
-        await this.removeSocketFromSession(session.userId, session.socketId, session.targetUserId);
+        socketIds.push(session.socketId);
       }
+
     }
+
+    return socketIds;
+
   }
 
 }

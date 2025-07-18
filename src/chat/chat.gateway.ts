@@ -1,8 +1,8 @@
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { HttpException, HttpStatus, OnModuleInit } from "@nestjs/common";
 import {  ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server } from "socket.io";
 import { Socket }   from "socket.io";
-import { UserSessionService } from "../services/session/user.session.setvice";
+import { UserSessionService } from "../services/session/user.session.service";
 import * as jwt from "jsonwebtoken";
 import { jwtSecret } from "../../config/jwt.secret";
 import { MessageService } from "../services/message/message.service";
@@ -13,22 +13,25 @@ import { SessionCleanerService } from "../services/session/session.cleaner.servi
 
 
 
+
 @WebSocketGateway(3002, {
   cors: {
     origin: '*', 
   },
 })
-export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
+export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect,OnModuleInit{
 
     @WebSocketServer() server:Server;
 
     constructor(
       private readonly userSessionService: UserSessionService,
       private readonly messageService:MessageService, 
-    ) {
-      
-    }
+      private readonly sessionCleanerService:SessionCleanerService
+    ) {}
 
+    onModuleInit() {
+      this.sessionCleanerService.setServer(this.server);
+    }
     
     async handleConnection(socket: Socket) {
       
@@ -62,10 +65,9 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
   
     
     async handleDisconnect(socket: Socket) {
+      console.log(socket.data.user)
       try {
         const user = socket.data.user;
-
-        this.server.sockets.sockets.get(socket.id)?.disconnect(true);
         
         if (user.id) {
           this.userSessionService.removeSocketFromSession(user.id, socket.id, user.targetUserId);
@@ -73,6 +75,7 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
       } catch (error) {
         console.error('Error during disconnect:', error);
       }
+
     }
   
     @SubscribeMessage('sendMessage')
@@ -80,15 +83,22 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
       const data:SendMessageDto=JSON.parse(message);
       
 
-      this.userSessionService.updateLastActiveTime(data.senderId, socket.id);
+      this.userSessionService.updateLastActiveTime(socket.data.user.id, socket.id);
     
-      const newMessage=await this.messageService.sendMessage(data);
+
+      const newMessage=await this.messageService.sendMessage({
+        content:data.content,
+        type:!data.type?"text":data.type,
+        senderId:socket.data.user.id,
+        receiverId:socket.data.user.targetUserId
+       });
 
       if(newMessage instanceof ApiResponse){
         socket.emit("newMessageError",newMessage);
       }else{
         
-        const targetSockets = await this.userSessionService.getTargetSockets(data.senderId, data.receiverId);
+        const targetSockets = await this.userSessionService.
+                getTargetSockets(socket.data.user.id, socket.data.user.targetUserId);
 
         targetSockets.forEach(socketId => {
           this.server.to(socketId).emit('newMessage', { newMessage });
@@ -116,6 +126,14 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect{
     }
     @SubscribeMessage('isTyping')
     async isTyping(socket:Socket){
-      
+      this.userSessionService.updateLastActiveTime(socket.data.user.id, socket.id);
+
+      const receiverSockets = await this.userSessionService.
+                getReceiverSockets(socket.data.user.id, socket.data.user.targetUserId);
+
+       receiverSockets.forEach(socketId=>{
+        this.server.to(socketId).emit("typing",{});
+       })         
+       
     }
 }

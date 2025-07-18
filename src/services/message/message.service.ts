@@ -13,7 +13,12 @@ export class MessageService {
     private messageRepository: Repository<Message>,
   ) {}
 
-  async sendMessage(data:SendMessageDto):Promise<Message|ApiResponse> {
+  async sendMessage(data:{
+    senderId:number,
+    receiverId:number,
+    type:"text"|"image"|"file"|"video",
+    content:string
+  }):Promise<Message|ApiResponse> {
     const {senderId,receiverId,type,content}=data
     
     const newMessage:Message={

@@ -1,13 +1,7 @@
 export class SendMessageDto {
    
-    senderId: number;
-  
-
-    receiverId: number;
-  
+   content: string;
     
-    content: string;
+   type?: 'text' | 'image' | 'file' | 'video' = 'text';
   
-    
-    type?: 'text' | 'image' | 'file' | 'video' = 'text';
-  }
+}

@@ -1,16 +1,39 @@
-import { Injectable } from "@nestjs/common";
-import { UserSessionService } from "./user.session.setvice";
+import {  Injectable } from "@nestjs/common";
+import { UserSessionService } from "./user.session.service";
+import {Server} from "socket.io";
+
+
 
 @Injectable()
 export class SessionCleanerService {
-  constructor(private readonly userSessionService: UserSessionService) {
-    console.log("called")
+
+  private server:Server;
+
+  constructor(private readonly userSessionService: UserSessionService,
+  ) {}
+
+  public setServer(server:Server){
+    this.server=server;
     this.startInactiveSessionCheck();
   }
 
   private startInactiveSessionCheck() {
+
     setInterval(async () => {
-      await this.userSessionService.checkInactiveSessions();
+      const socketIds=await this.userSessionService.checkInactiveSessions();
+
+      for(let id of socketIds){
+          if(this.server.sockets.sockets.get(id)){
+            this.server.sockets.sockets.get(id)?.disconnect(true);
+          }else{
+            this.userSessionService.removeSocketById(id);
+          }
+          
+          
+      }
+
     }, 5 * 60 * 1000); 
   }
+ 
+
 }
