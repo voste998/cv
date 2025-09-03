@@ -25,6 +25,7 @@ export class SessionCleanerService {
       for(let id of socketIds){
           if(this.server.sockets.sockets.get(id)){
             this.server.sockets.sockets.get(id)?.disconnect(true);
+            //this.userSessionService.removeSocketById(id);
           }else{
             this.userSessionService.removeSocketById(id);
           }

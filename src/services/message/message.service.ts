@@ -26,7 +26,7 @@ export class MessageService {
       content:content, 
       senderId:senderId,
       receiverId:receiverId,
-    } as any
+    } as any;
     
     let newMessageData;
 

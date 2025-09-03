@@ -58,14 +58,14 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect,OnMo
         socket.data.user = { ...decoded, targetUserId: Number(targetUserId) };
   
       } catch (error) {
-        socket.emit('message', { content: 'Error connecting to the server' });
+        socket.emit('connectionError', { content: 'Error connecting to the server' });
         socket.disconnect(true);
       }
-    }
-  
     
+    }
+    //
     async handleDisconnect(socket: Socket) {
-      console.log(socket.data.user)
+      
       try {
         const user = socket.data.user;
         
@@ -84,8 +84,7 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect,OnMo
       
 
       this.userSessionService.updateLastActiveTime(socket.data.user.id, socket.id);
-    
-
+      
       const newMessage=await this.messageService.sendMessage({
         content:data.content,
         type:!data.type?"text":data.type,
@@ -107,19 +106,19 @@ export class ChatGateway implements OnGatewayConnection,OnGatewayDisconnect,OnMo
       }
       
     }
-    @SubscribeMessage('markMessageAsRead')
+    @SubscribeMessage('markAsRead')
     async markMessagesAsRead(@MessageBody() data:MarkMessagesAsReadDto,socket:Socket){
       
       let ids=await this.messageService.markMessagesAsRead(data.messageIds);
 
       if(ids instanceof ApiResponse){
-          socket.emit("markError",{ids});
+        socket.emit("isRead",{error:""})
         }else{
           const targetSockets = await this.userSessionService.
                   getTargetSockets(socket.data.user.id, socket.data.user.targetUserId);
 
           targetSockets.forEach(socketId=>{
-            this.server.to(socketId).emit("markedMessages",{ids});
+            this.server.to(socketId).emit("isRead",{ids});
           })
 
         }
